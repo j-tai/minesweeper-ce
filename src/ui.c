@@ -1,3 +1,5 @@
+#include "ui.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -11,12 +13,6 @@
 #define OFFSET 10
 /** Width of each cell */
 #define WIDTH 10
-
-typedef struct ui {
-    game *game;
-    uint8_t row, col;
-    uint8_t last_row, last_col;
-} ui;
 
 static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
     uint16_t pos = (uint16_t)row * u->game->cols + col;
@@ -39,6 +35,7 @@ static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
         s = ".";
     }
     gfx_PrintStringXY(s, OFFSET + col * WIDTH, OFFSET + row * WIDTH);
+    u->cache[pos] = cell;
 }
 
 static void ui_draw_game(ui *u) {
@@ -51,6 +48,9 @@ static void ui_draw_game(ui *u) {
 }
 
 static void ui_redraw_cell(ui *u, uint8_t row, uint8_t col) {
+    uint16_t pos = (uint16_t)row * u->game->cols + col;
+    if (u->cache[pos] == u->game->buffer[pos])
+        return;
     gfx_SetColor(255);
     gfx_FillRectangle(OFFSET + col * WIDTH, OFFSET + row * WIDTH, 8, 8);
     gfx_SetColor(0);
@@ -84,17 +84,24 @@ static void ui_redraw_cursor(ui *u) {
     ui_draw_cursor(u);
 }
 
-void ui_run(game *g) {
-    ui u;
+bool ui_init(ui *u, game *g) {
+    u->game = g;
+    u->cache = malloc((size_t)g->rows * g->cols);
+    return true;
+}
+
+void ui_free(ui *u) {
+    free(u->cache);
+}
+
+void ui_run(ui *u) {
     sk_key_t key;
-    u.game = g;
-    u.row = u.col = 0;
-    u.last_row = u.last_col = 0;
+    u->row = u->col = 0;
     /* Initialize graphics */
     gfx_Begin();
     /* Draw screen */
-    ui_draw_game(&u);
-    ui_draw_cursor(&u);
+    ui_draw_game(u);
+    ui_draw_cursor(u);
     /* Main loop */
     while (true) {
         /* Wait for key press */
@@ -103,29 +110,29 @@ void ui_run(game *g) {
         if (key == sk_Del) {
             break; /* End game */
         } else if (key == sk_2nd) {
-            game_dig(g, u.row, u.col);
+            game_dig(u->game, u->row, u->col);
             /* Redraw the game */
-            ui_redraw_game(&u);
+            ui_redraw_game(u);
         } else if (key == sk_Alpha) {
-            game_flag(g, u.row, u.col);
+            game_flag(u->game, u->row, u->col);
             /* Only need to redraw the current cell */
-            ui_redraw_cell(&u, u.row, u.col);
+            ui_redraw_cell(u, u->row, u->col);
         } else if (key == sk_Up) {
-            if (u.row != 0)
-                u.row--;
-            ui_redraw_cursor(&u);
+            if (u->row != 0)
+                u->row--;
+            ui_redraw_cursor(u);
         } else if (key == sk_Down) {
-            if (u.row != g->rows - 1)
-                u.row++;
-            ui_redraw_cursor(&u);
+            if (u->row != u->game->rows - 1)
+                u->row++;
+            ui_redraw_cursor(u);
         } else if (key == sk_Left) {
-            if (u.col != 0)
-                u.col--;
-            ui_redraw_cursor(&u);
+            if (u->col != 0)
+                u->col--;
+            ui_redraw_cursor(u);
         } else if (key == sk_Right) {
-            if (u.col != g->cols - 1)
-                u.col++;
-            ui_redraw_cursor(&u);
+            if (u->col != u->game->cols - 1)
+                u->col++;
+            ui_redraw_cursor(u);
         }
     }
     /* Finish graphics */
