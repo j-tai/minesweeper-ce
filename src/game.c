@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <graphx.h>
 #include <tice.h>
+
+#include "deque.h"
 
 /*
  * Cell format: 0bFMD0NNNN
@@ -54,7 +57,7 @@ static void game_generate(game *g, uint8_t row, uint8_t col) {
         do {
             pos = random() % area;
         } while ((g->buffer[pos] & CELL_MINE) != 0 ||
-                 !is_adjacent(chosen_pos, pos, cols));
+                 is_adjacent(chosen_pos, pos, cols));
         g->buffer[pos] |= CELL_MINE;
         /* Update neighbors; need to be careful not to go out of bounds */
         for (dr = (pos < cols ? 0 : -cols);
@@ -68,9 +71,42 @@ static void game_generate(game *g, uint8_t row, uint8_t col) {
     g->initialized = true;
 }
 
+void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
+    deque deq;
+    deque_init(&deq);
+    if (!(deque_push(&deq, row) && deque_push(&deq, col))) {
+        /* Failed to allocate; just abort */
+        deque_free(&deq);
+        return;
+    }
+    while (!deque_is_empty(&deq)) {
+        int8_t dr, dc;
+        row = deque_pop(&deq);
+        col = deque_pop(&deq);
+        for (dr = (row == 0 ? 0 : -1); dr <= (row == g->rows - 1 ? 0 : 1);
+             dr++) {
+            for (dc = (col == 0 ? 0 : -1); dc <= (col == g->cols - 1 ? 0 : 1);
+                 dc++) {
+                uint8_t nr = row + dr, nc = col + dc;
+                uint8_t *cell = game_get(g, nr, nc);
+                if (*cell != 0) {
+                    *cell |= CELL_DUG;
+                    continue;
+                }
+                *cell |= CELL_DUG;
+                if (!(deque_push(&deq, nr) && deque_push(&deq, nc)))
+                    break; /* Allocation failed; abort */
+            }
+        }
+    }
+    deque_free(&deq);
+}
+
 bool game_dig(game *g, uint8_t row, uint8_t col) {
-    uint8_t *cell;
-    cell = game_get(g, row, col);
+    uint8_t *cell = game_get(g, row, col);
+    /* Return if the cell has already been dug */
+    if (*cell & CELL_DUG)
+        return true;
     /* Tried to dig a cell with a mine; the game is lost */
     if ((*cell & CELL_MINE) != 0) {
         return false;
@@ -79,6 +115,10 @@ bool game_dig(game *g, uint8_t row, uint8_t col) {
         game_generate(g, row, col);
     }
     *cell |= CELL_DUG;
+    /* Run a BFS if the cell is 0 */
+    if ((*cell & CELL_NEIGHBOR) == 0) {
+        game_dig_bfs(g, row, col);
+    }
     g->cells_left--;
     return true;
 }

@@ -9,3 +9,6 @@ compile_flags.txt:
 
 cemu: all
 	cemu --send bin/$(NAME).8xp
+
+cemu-debug: debug
+	cemu --send bin/$(NAME).8xp
