@@ -1,10 +1,12 @@
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+#include <debug.h>
 #include <graphx.h>
 #include <tice.h>
 
+#include "deque.h"
 #include "game.h"
 #include "ui.h"
 
@@ -12,7 +14,8 @@ static void out_of_memory(void) {
     os_SetCursorPos(0, 0);
     os_PutStrFull("Out of memory.");
     /* Wait for a key press */
-    while (!os_GetCSC());
+    while (!os_GetCSC())
+        ;
 }
 
 void main(void) { /* NOLINT for 'void' return type */
