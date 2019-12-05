@@ -53,12 +53,12 @@ static void game_generate(game *g, uint8_t row, uint8_t col) {
         uint16_t pos;
         do {
             pos = random() % area;
-        } while ((g->buffer[pos] & CELL_MINE) != 0 &&
+        } while ((g->buffer[pos] & CELL_MINE) != 0 ||
                  !is_adjacent(chosen_pos, pos, cols));
         g->buffer[pos] |= CELL_MINE;
         /* Update neighbors; need to be careful not to go out of bounds */
-        for (dr = (pos < cols ? 0 : -cols); dr <= (pos >= area - cols ? 0 : cols);
-             dr += cols) {
+        for (dr = (pos < cols ? 0 : -cols);
+             dr <= (pos >= area - cols ? 0 : cols); dr += cols) {
             for (dc = (pos % cols == 0 ? 0 : -1);
                  dc <= (pos % cols == cols - 1 ? 0 : 1); dc++) {
                 g->buffer[pos + dr + dc]++;
