@@ -27,7 +27,9 @@ void main(void) { /* NOLINT for 'void' return type */
 
     if (game_init(&g, 22, 30, 40)) {
         if (ui_init(&u, &g)) {
-            ui_run(&u);
+            gfx_Begin(); /* Initialize graphics */
+            ui_run(&u);  /* Run game */
+            gfx_End();   /* Finish graphics */
             ui_free(&u);
         } else {
             out_of_memory();

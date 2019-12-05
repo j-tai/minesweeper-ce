@@ -17,7 +17,8 @@
  * D = whether the cell has been dug up.
  * NNNN = number of neighbouring mines.
  * F and D must never be set at the same time.
- * M and D must never be set at the same time.
+ * If M and D are both set, then the digging of this cell caused the
+ * game over.
  * NNNN may not be set if M is set.
  */
 
@@ -25,11 +26,13 @@ bool game_init(game *g, uint8_t rows, uint8_t cols, uint8_t mines) {
     size_t len = (size_t)rows * cols;
     g->rows = rows;
     g->cols = cols;
-    g->mines_left = mines;
     g->buffer = malloc(len);
     if (g->buffer == NULL)
         return false;
     memset(g->buffer, 0, len);
+    g->mines_left = mines;
+    g->cells_left = len - mines;
+    g->initialized = false;
     return true;
 }
 
@@ -89,6 +92,8 @@ void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
                  dc++) {
                 uint8_t nr = row + dr, nc = col + dc;
                 uint8_t *cell = game_get(g, nr, nc);
+                if ((*cell & CELL_DUG) == 0)
+                    g->cells_left--;
                 if (*cell != 0) {
                     *cell |= CELL_DUG;
                     continue;
@@ -109,6 +114,7 @@ bool game_dig(game *g, uint8_t row, uint8_t col) {
         return true;
     /* Tried to dig a cell with a mine; the game is lost */
     if ((*cell & CELL_MINE) != 0) {
+        *cell |= CELL_DUG;
         return false;
     }
     if (!g->initialized) {

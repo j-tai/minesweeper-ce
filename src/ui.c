@@ -19,7 +19,9 @@ static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
     uint8_t cell = u->game->buffer[pos];
     char buf[2];
     const char *s;
-    if (cell & CELL_DUG) {
+    if ((cell & CELL_DUG) && (cell & CELL_MINE)) {
+        s = "x";
+    } else if (cell & CELL_DUG) {
         uint8_t neighbors;
         neighbors = (cell & CELL_NEIGHBOR);
         if (neighbors == 0) {
@@ -32,7 +34,7 @@ static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
     } else if (cell & CELL_FLAG) {
         s = "*";
     } else {
-        s = ".";
+        s = " .";
     }
     gfx_PrintStringXY(s, OFFSET + col * WIDTH, OFFSET + row * WIDTH);
     u->cache[pos] = cell;
@@ -90,15 +92,11 @@ bool ui_init(ui *u, game *g) {
     return true;
 }
 
-void ui_free(ui *u) {
-    free(u->cache);
-}
+void ui_free(ui *u) { free(u->cache); }
 
 void ui_run(ui *u) {
     sk_key_t key;
     u->row = u->col = 0;
-    /* Initialize graphics */
-    gfx_Begin();
     /* Draw screen */
     ui_draw_game(u);
     ui_draw_cursor(u);
@@ -107,10 +105,21 @@ void ui_run(ui *u) {
         /* Wait for key press */
         while ((key = os_GetCSC()) == 0)
             ;
+        if (u->game->cells_left == 0) {
+            while (os_GetCSC() != sk_Del)
+                ;
+            break;
+        }
         if (key == sk_Del) {
             break; /* End game */
         } else if (key == sk_2nd) {
-            game_dig(u->game, u->row, u->col);
+            if (!game_dig(u->game, u->row, u->col)) {
+                /* The game is lost */
+                ui_redraw_game(u);
+                while (os_GetCSC() != sk_Del)
+                    ;
+                break; /* Exit the game */
+            }
             /* Redraw the game */
             ui_redraw_game(u);
         } else if (key == sk_Alpha) {
@@ -135,6 +144,4 @@ void ui_run(ui *u) {
             ui_redraw_cursor(u);
         }
     }
-    /* Finish graphics */
-    gfx_End();
 }
