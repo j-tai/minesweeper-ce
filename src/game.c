@@ -92,6 +92,9 @@ void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
                  dc++) {
                 uint8_t nr = row + dr, nc = col + dc;
                 uint8_t *cell = game_get(g, nr, nc);
+                /* Don't touch any flagged cells */
+                if (*cell & CELL_FLAG)
+                    continue;
                 if ((*cell & CELL_DUG) == 0)
                     g->cells_left--;
                 if (*cell != 0) {
@@ -109,8 +112,8 @@ void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
 
 bool game_dig(game *g, uint8_t row, uint8_t col) {
     uint8_t *cell = game_get(g, row, col);
-    /* Return if the cell has already been dug */
-    if (*cell & CELL_DUG)
+    /* Return if the cell has already been dug or has a flag */
+    if ((*cell & CELL_DUG) || (*cell & CELL_FLAG))
         return true;
     /* Tried to dig a cell with a mine; the game is lost */
     if ((*cell & CELL_MINE) != 0) {
