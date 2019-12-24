@@ -1,4 +1,5 @@
 NAME ?= MINESCE
+ARCHIVED ?= YES
 COMPRESSED ?= NO
 DESCRIPTION ?= "Minesweeper"
 
