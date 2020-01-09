@@ -14,12 +14,16 @@
 /** Width of each cell */
 #define WIDTH 10
 
+const uint8_t CELL_COLORS[] = {0, 24, 5, 232, 16, 128, 20, 121, 116};
+
 static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
     uint16_t pos = (uint16_t)row * u->game->cols + col;
     uint8_t cell = u->game->buffer[pos];
     char buf[2];
     const char *s;
     if ((cell & CELL_DUG) && (cell & CELL_MINE)) {
+        gfx_SetTextBGColor(224); /* red */
+        gfx_SetTextFGColor(255); /* white */
         s = "x";
     } else if (cell & CELL_DUG) {
         uint8_t neighbors;
@@ -27,13 +31,19 @@ static void ui_draw_cell(ui *u, uint8_t row, uint8_t col) {
         if (neighbors == 0) {
             return; /* No text to display */
         } else {
+            gfx_SetTextBGColor(255); /* default */
+            gfx_SetTextFGColor(CELL_COLORS[neighbors]);
             buf[0] = '0' + neighbors;
             buf[1] = 0;
             s = buf;
         }
     } else if (cell & CELL_FLAG) {
+        gfx_SetTextBGColor(255); /* default */
+        gfx_SetTextFGColor(232);
         s = "*";
     } else {
+        gfx_SetTextBGColor(255); /* default */
+        gfx_SetTextFGColor(0);
         s = " .";
     }
     gfx_PrintStringXY(s, OFFSET + col * WIDTH, OFFSET + row * WIDTH);
