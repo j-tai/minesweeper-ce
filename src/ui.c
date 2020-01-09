@@ -89,6 +89,8 @@ static void ui_redraw_cursor(ui *u) {
 bool ui_init(ui *u, game *g) {
     u->game = g;
     u->cache = malloc((size_t)g->rows * g->cols);
+    if (u->cache == NULL)
+        return false;
     return true;
 }
 
