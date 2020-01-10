@@ -60,7 +60,7 @@ bool menu_run(menu *m) {
     os_SetCursorPos(6, 1);
     os_PutStrFull("Mines:");
     os_SetCursorPos(8, 9);
-    os_PutStrFull("OK [2nd]");
+    os_PutStrFull("OK \3012nd]"); /* '\301' = '[' in TI-ASCII */
     while (true) {
         const struct difficulty *diff;
         char buf[4];
