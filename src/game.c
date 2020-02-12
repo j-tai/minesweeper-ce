@@ -32,7 +32,9 @@ bool game_init(game *g, uint8_t rows, uint8_t cols, uint8_t mines) {
     memset(g->buffer, 0, len);
     g->mines_left = mines;
     g->cells_left = len - mines;
-    g->initialized = false;
+    g->flags.initialized = false;
+    g->flags.game_over = false;
+    g->time = rtc_Time();
     return true;
 }
 
@@ -71,7 +73,7 @@ static void game_generate(game *g, uint8_t row, uint8_t col) {
             }
         }
     }
-    g->initialized = true;
+    g->flags.initialized = true;
 }
 
 void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
@@ -110,17 +112,24 @@ void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
     deque_free(&deq);
 }
 
-bool game_dig(game *g, uint8_t row, uint8_t col) {
+/** Set the game over flag and update the time field */
+static void game_over(game *g, bool win) {
+    g->flags.game_over = true;
+    g->flags.win = win;
+    g->time = rtc_Time() - g->time;
+}
+
+void game_dig(game *g, uint8_t row, uint8_t col) {
     uint8_t *cell = game_get(g, row, col);
     /* Return if the cell has already been dug or has a flag */
     if ((*cell & CELL_DUG) || (*cell & CELL_FLAG))
-        return true;
+        return;
     /* Tried to dig a cell with a mine; the game is lost */
     if ((*cell & CELL_MINE) != 0) {
         *cell |= CELL_DUG;
-        return false;
+        game_over(g, false);
     }
-    if (!g->initialized) {
+    if (!g->flags.initialized) {
         game_generate(g, row, col);
     }
     *cell |= CELL_DUG;
@@ -129,7 +138,8 @@ bool game_dig(game *g, uint8_t row, uint8_t col) {
         game_dig_bfs(g, row, col);
     }
     g->cells_left--;
-    return true;
+    if (g->cells_left == 0)
+        game_over(g, true);
 }
 
 void game_flag(game *g, uint8_t row, uint8_t col) {
@@ -139,5 +149,13 @@ void game_flag(game *g, uint8_t row, uint8_t col) {
     if ((*cell & CELL_DUG) == 0) {
         /* Toggle flag */
         *cell ^= CELL_FLAG;
+    }
+}
+
+uint32_t game_time(const game *g) {
+    if (g->flags.game_over) {
+        return g->time;
+    } else {
+        return rtc_Time() - g->time;
     }
 }

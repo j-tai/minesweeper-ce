@@ -117,21 +117,10 @@ void ui_run(ui *u) {
         /* Wait for key press */
         while ((key = os_GetCSC()) == 0)
             ;
-        if (u->game->cells_left == 0) {
-            while (os_GetCSC() != sk_Del)
-                ;
-            break;
-        }
         if (key == sk_Del) {
             break; /* End game */
         } else if (key == sk_2nd) {
-            if (!game_dig(u->game, u->row, u->col)) {
-                /* The game is lost */
-                ui_redraw_game(u);
-                while (os_GetCSC() != sk_Del)
-                    ;
-                break; /* Exit the game */
-            }
+            game_dig(u->game, u->row, u->col);
             /* Redraw the game */
             ui_redraw_game(u);
         } else if (key == sk_Alpha) {
@@ -154,6 +143,12 @@ void ui_run(ui *u) {
             if (u->col != u->game->cols - 1)
                 u->col++;
             ui_redraw_cursor(u);
+        }
+        /* Check if the game is over */
+        if (u->game->flags.game_over) {
+            while (os_GetCSC() != sk_Del)
+                ;
+            break;
         }
     }
 }
