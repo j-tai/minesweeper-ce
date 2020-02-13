@@ -20,7 +20,7 @@ typedef struct game {
     /** Number of cells left to be dug up */
     uint16_t cells_left;
     struct {
-        /** Whether the mines have been placed */
+        /** Whether the mines have been placed and the RTC has been started */
         bool initialized : 1;
         /** Whether the game is over */
         bool game_over : 1;

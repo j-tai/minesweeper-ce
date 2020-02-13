@@ -23,6 +23,9 @@ void main(void) { /* NOLINT for 'void' return type */
     menu m;
     game g;
     ui u;
+    uint32_t time;
+    /* Buffer for displaying the time */
+    char buf[16]; /* "71582788:20" + null terminator + paranoia */
 
     menu_init(&m);
     if (!menu_run(&m))
@@ -45,6 +48,14 @@ void main(void) { /* NOLINT for 'void' return type */
     gfx_Begin(); /* Initialize graphics */
     ui_run(&u);  /* Run game */
     gfx_End();   /* Finish graphics */
+    time = game_time(&g);
     ui_free(&u);
     game_free(&g);
+
+    sprintf(buf, "%d:%02d", (int)(time / 60), (int)(time % 60));
+    os_SetCursorPos(0, 0);
+    os_PutStrFull("Time: ");
+    os_PutStrFull(buf);
+    /* Wait for key press */
+    while (!os_GetCSC());
 }
