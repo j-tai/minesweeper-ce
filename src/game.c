@@ -34,7 +34,7 @@ bool game_init(game *g, uint8_t rows, uint8_t cols, uint8_t mines) {
     g->cells_left = len - mines;
     g->flags.initialized = false;
     g->flags.game_over = false;
-    g->time = rtc_Time();
+    g->time = 0;
     return true;
 }
 
@@ -74,6 +74,7 @@ static void game_generate(game *g, uint8_t row, uint8_t col) {
         }
     }
     g->flags.initialized = true;
+    g->time = rtc_Time();
 }
 
 void game_dig_bfs(game *g, uint8_t row, uint8_t col) {
@@ -153,7 +154,7 @@ void game_flag(game *g, uint8_t row, uint8_t col) {
 }
 
 uint32_t game_time(const game *g) {
-    if (g->flags.game_over) {
+    if (g->flags.game_over || !g->flags.initialized) {
         return g->time;
     } else {
         return rtc_Time() - g->time;
